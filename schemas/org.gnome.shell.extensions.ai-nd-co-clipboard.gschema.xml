@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Settings schema for the Clipboard History extension.
+
+  SPDX-FileCopyrightText: 2025 Manouchehr Ghalevand
+  SPDX-License-Identifier: GPL-2.0-or-later
+
+  The schema id must match the settings-schema key in metadata.json exactly.
+-->
+<schemalist>
+  <schema id="org.gnome.shell.extensions.ai-nd-co-clipboard"
+          path="/org/gnome/shell/extensions/ai-nd-co-clipboard/">
+
+    <!-- Shortcut that opens and closes the clipboard history panel. It is an
+         array because Main.wm.addKeybinding expects a GVariant of type 'as'
+         (an array of accelerator strings), exactly like the built-in
+         gnome-shell keybindings. -->
+    <key name="toggle-shortcut" type="as">
+      <default>['&lt;Super&gt;v']</default>
+      <summary>Toggle the clipboard history popup</summary>
+      <description>
+        Keybinding used to open and close the clipboard history panel.
+      </description>
+    </key>
+
+    <!-- Maximum number of non-pinned history entries. Pinned entries are
+         exempt from this limit and are always kept. -->
+    <key name="max-history-size" type="i">
+      <range min="10" max="500"/>
+      <default>50</default>
+      <summary>Maximum number of non-pinned history entries</summary>
+      <description>
+        When the history exceeds this size, the oldest non-pinned entries
+        are removed first.
+      </description>
+    </key>
+
+    <!-- Enables or disables storing copied images. When off, only text
+         clipboard changes are recorded in the history. -->
+    <key name="enable-image-support" type="b">
+      <default>true</default>
+      <summary>Enable capturing image clipboard content</summary>
+      <description>
+        When enabled, copied images are saved as PNG thumbnails and shown
+        with an image preview in the history panel.
+      </description>
+    </key>
+
+  </schema>
+</schemalist>

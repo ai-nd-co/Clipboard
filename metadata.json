@@ -1,0 +1,10 @@
+{
+    "uuid": "clipboard@ai-nd.co",
+    "name": "Clipboard",
+    "description": "A simple Windows-style clipboard history for text, links, and images. Open it with Super+V, then click an item to paste it.",
+    "shell-version": ["46", "47", "48", "49", "50"],
+    "url": "https://github.com/ai-nd-co/Clipboard",
+    "settings-schema": "org.gnome.shell.extensions.ai-nd-co-clipboard",
+    "version": 1,
+    "version-name": "1.0.0"
+}

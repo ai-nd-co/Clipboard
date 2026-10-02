@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  icon.svg — project icon for Clipboard History (Super+V)
+
+  SPDX-FileCopyrightText: 2025 Manouchehr Ghalevand
+  SPDX-License-Identifier: GPL-2.0-or-later
+
+  Drawn in the GNOME app-icon idiom on a 128x128 canvas. The palette is taken
+  from stylesheet.css so the icon matches the panel itself: Adwaita blue
+  (#3584e4) for the most recent entry, as used by the active tab, and Adwaita
+  yellow (#f5c211), the colour of a pinned entry, for the clock badge. The
+  card behind the clipboard and the clock together say "history".
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#62a0ea"/>
+      <stop offset="1" stop-color="#1a5fb4"/>
+    </linearGradient>
+    <linearGradient id="sheet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f0eff2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded-square base with a soft top highlight -->
+  <rect x="8" y="8" width="112" height="112" rx="27" fill="url(#base)"/>
+  <path d="M35 8h58a27 27 0 0 1 27 27v6a27 27 0 0 0-27-27H35A27 27 0 0 0 8 41v-6A27 27 0 0 1 35 8z"
+        fill="#ffffff" opacity="0.22"/>
+
+  <!-- History stack: an older entry tucked in behind the clipboard -->
+  <rect x="26" y="38" width="52" height="60" rx="9" fill="#ffffff" opacity="0.55"
+        transform="rotate(-11 52 68)"/>
+
+  <!-- Clipboard body -->
+  <rect x="36" y="31" width="60" height="72" rx="10" fill="url(#sheet)"/>
+
+  <!-- Clip at the top -->
+  <rect x="52" y="23" width="28" height="15" rx="6" fill="#c0bfbc"/>
+  <rect x="57" y="18" width="18" height="11" rx="5" fill="#9a9996"/>
+
+  <!-- Entries: the first one is the active/most recent, in Adwaita blue -->
+  <rect x="46" y="52" width="40" height="7" rx="3.5" fill="#3584e4"/>
+  <rect x="46" y="66" width="32" height="7" rx="3.5" fill="#c0bfbc"/>
+  <rect x="46" y="80" width="37" height="7" rx="3.5" fill="#c0bfbc"/>
+
+  <!-- Clock badge, in the yellow of .clipboard-history-icon-button:checked -->
+  <circle cx="95" cy="94" r="17" fill="#f5c211" stroke="#ffffff" stroke-width="4"/>
+  <g stroke="#ffffff" stroke-width="3.5" stroke-linecap="round">
+    <line x1="95" y1="94" x2="95" y2="86"/>
+    <line x1="95" y1="94" x2="101.5" y2="94"/>
+  </g>
+</svg>
