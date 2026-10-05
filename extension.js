@@ -73,6 +73,29 @@ const IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/tiff', 'image/bmp'];
 // to record it.
 const SENSITIVE_MIME_TYPES = ['x-kde-passwordManagerHint'];
 
+// Linux evdev keycodes (linux/input-event-codes.h). Pasting by keycode rather
+// than by keyval works under any active layout: with a Russian layout active,
+// the keyval 'v' maps to no key and Mutter silently drops the event.
+const EVDEV_KEY_LEFTCTRL = 29;
+const EVDEV_KEY_LEFTSHIFT = 42;
+const EVDEV_KEY_V = 47;
+
+// Terminals bind Ctrl+V to a literal ^V, so they receive Ctrl+Shift+V instead.
+// Matched case-insensitively against the window's WM_CLASS.
+const TERMINAL_WM_CLASSES = [
+    'gnome-terminal-server', 'org.gnome.terminal', 'org.gnome.ptyxis', 'ptyxis',
+    'org.gnome.console', 'kgx', 'kitty', 'alacritty', 'org.wezfurlong.wezterm',
+    'wezterm', 'com.mitchellh.ghostty', 'ghostty', 'tilix', 'com.gexperts.tilix',
+    'konsole', 'org.kde.konsole', 'terminator', 'xterm', 'urxvt', 'foot',
+    'xfce4-terminal', 'qterminal', 'lxterminal', 'blackbox', 'com.raggesilver.blackbox',
+];
+
+function isTerminalWindow(window) {
+    const wmClass = (window?.get_wm_class() ?? '').toLowerCase();
+    const wmInstance = (window?.get_wm_class_instance() ?? '').toLowerCase();
+    return TERMINAL_WM_CLASSES.includes(wmClass) || TERMINAL_WM_CLASSES.includes(wmInstance);
+}
+
 // ----------------------------------------------------------------------
 // Standalone helpers
 // ----------------------------------------------------------------------
@@ -507,6 +530,8 @@ class ClipboardHistoryIndicator extends PanelMenu.Button {
 
         this._menuStateId = this.menu.connect('open-state-changed', (menu, isOpen) => {
             if (isOpen) {
+                // Remember where the paste should land before the menu takes focus.
+                this._targetWindow = global.display.focus_window;
                 this._searchEntry.set_text('');
                 this._applyFilter();
                 global.stage.set_key_focus(this._searchEntry);
@@ -629,7 +654,8 @@ class ClipboardHistoryIndicator extends PanelMenu.Button {
     }
 
     _schedulePaste() {
-        this._extension.schedulePaste(PASTE_DELAY_MS);
+        this._extension.schedulePaste(PASTE_DELAY_MS, this._targetWindow);
+        this._targetWindow = null;
     }
 
     _onPinToggled() {
@@ -741,6 +767,7 @@ class ClipboardHistoryIndicator extends PanelMenu.Button {
             this._menuStateId = null;
         }
 
+        this._targetWindow = null;
         this._watcher = null;
         this._store = null;
         super.destroy();
@@ -826,11 +853,18 @@ export default class ClipboardHistoryExtension extends Extension {
 
     /** Pastes into the focused application after a short delay, giving
      * keyboard focus time to return there once the menu has closed. */
-    schedulePaste(delayMs) {
-        this._addPasteTimeout(delayMs, () => this.simulatePaste());
+    schedulePaste(delayMs, targetWindow) {
+        this._addPasteTimeout(delayMs, () => this.simulatePaste(targetWindow));
     }
 
-    simulatePaste() {
+    simulatePaste(targetWindow) {
+        // The window may have closed while the menu was open.
+        let window = global.display.focus_window;
+        if (targetWindow && global.get_window_actors().some(a => a.meta_window === targetWindow)) {
+            if (window !== targetWindow)
+                targetWindow.activate(global.get_current_time());
+            window = targetWindow;
+        }
         if (!this._virtualKeyboard) {
             // Both branches are live across the supported range: gnome-shell 46
             // reaches the seat through Clutter.get_default_backend(), and 47+
@@ -842,23 +876,25 @@ export default class ClipboardHistoryExtension extends Extension {
             this._virtualKeyboard = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
         }
 
-        // The four key events — press and release for Control and for v —
+        // The key events — press and release for the modifiers and for V —
         // are sent slightly apart rather than all within one tick, which is
         // more reliable with applications that discard synthetic events
         // arriving too close together, as some Electron and Java ones do. If
         // pasting still fails in a particular application, the content is on
         // the clipboard regardless and the user can press Ctrl+V themselves.
+        const modifiers = isTerminalWindow(window)
+            ? [EVDEV_KEY_LEFTCTRL, EVDEV_KEY_LEFTSHIFT]
+            : [EVDEV_KEY_LEFTCTRL];
         const steps = [
-            [Clutter.KEY_Control_L, Clutter.KeyState.PRESSED],
-            [Clutter.KEY_v, Clutter.KeyState.PRESSED],
-            [Clutter.KEY_v, Clutter.KeyState.RELEASED],
-            [Clutter.KEY_Control_L, Clutter.KeyState.RELEASED],
+            ...modifiers.map(key => [key, Clutter.KeyState.PRESSED]),
+            [EVDEV_KEY_V, Clutter.KeyState.PRESSED],
+            [EVDEV_KEY_V, Clutter.KeyState.RELEASED],
+            ...modifiers.reverse().map(key => [key, Clutter.KeyState.RELEASED]),
         ];
 
-        steps.forEach(([keyval, state], index) => {
+        steps.forEach(([key, state], index) => {
             this._addPasteTimeout(index * PASTE_KEY_STAGGER_MS, () => {
-                const now = Clutter.get_current_event_time() * 1000;
-                this._virtualKeyboard?.notify_keyval(now, keyval, state);
+                this._virtualKeyboard?.notify_key(GLib.get_monotonic_time(), key, state);
             });
         });
     }
